@@ -1,0 +1,28 @@
+{
+  "name": "jef.ajax",
+  "version": "1.0.0",
+  "authors": [
+    "eyaka"
+  ],
+  "description": "JEF AJAX mod",
+  "main": "jef_ajax.js",
+  "moduleType": [
+    "amd",
+    "es6",
+    "node"
+  ],
+  "keywords": [
+    "JEF",
+    "AJAX",
+    "mod"
+  ],
+  "license": "CC-BY",
+  "homepage": "eyaka.be",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
