@@ -6,10 +6,6 @@
 
 var jef_ajax = {
 
-    _this: function _this() {
-        return this;
-    },
-
     ajax: function ajax(options) {
 
         var req = new XMLHttpRequest();
@@ -18,13 +14,15 @@ var jef_ajax = {
 
         req.onreadystatechange = function (aEvt) {
 
-            if (req.readyState == 4) {
-                if (req.status == 200) {
+            if (req.readyState === 4) {
+                if (req.status === 200) {
                     if (options.success) {
                         options.success.call(this);
                         return req.responseText;
                     }
-                } else console.log('[jef] error ajax loading');
+                } else {
+                    console.log('[jef] error ajax loading');
+                }
             }
         };
 
@@ -36,11 +34,11 @@ var jef_ajax = {
      ****************************************************/
     loader: {
         show: function show() {
-            var loaderDiv;
+            var loaderDiv = undefined;
 
             // if the loader has not yet been created in the DOM
             // we create it and we inject
-            if (document.querySelectorAll('#js-JefLoader').length == '0') {
+            if (document.querySelectorAll('#js-JefLoader').length === 0) {
                 loaderDiv = document.createElement('div');
                 loaderDiv.setAttribute('id', 'js-JefLoader');
                 loaderDiv.setAttribute('class', 'js-JefLoader--enter');
@@ -74,7 +72,7 @@ var jef_ajax = {
         // display classes on containers
         classToggleContainer: {
 
-            oneContainer: function oneContainer(container) {
+            oneContainer: function oneContainer(container, options) {
                 container.classList.add('JefLoader--enter');
                 setTimeout(function () {
                     container.classList.add('JefLoader--enter-active');
@@ -83,10 +81,10 @@ var jef_ajax = {
                 setTimeout(function () {
                     container.classList.remove('JefLoader--enter-active');
                     container.classList.remove('JefLoader--enter');
-                }, 1000);
+                }, options.time);
             },
 
-            twoContainers: function twoContainers(newContainer, currentContainer) {
+            twoContainers: function twoContainers(newContainer, currentContainer, options) {
                 newContainer.classList.add('JefLoader--enter');
                 currentContainer.classList.add('JefLoader--leave');
 
@@ -98,7 +96,7 @@ var jef_ajax = {
                 setTimeout(function () {
                     newContainer.classList.remove('JefLoader--enter-active');
                     newContainer.classList.remove('JefLoader--enter');
-                }, 1000);
+                }, options.time + 100);
             }
         }
     },
@@ -117,50 +115,38 @@ var jef_ajax = {
         newContainer: '',
 
         display: {
-            'default': function _default(container, data) {
+            'default': function _default(container, data, options) {
                 // add/remove classes on container for the CSS animations
-                jef_ajax.injectNewContent.newContainer = document.querySelector(container);
-                jef_ajax.loader.classToggleContainer.oneContainer(jef_ajax.injectNewContent.newContainer);
+                jef_ajax.loader.classToggleContainer.oneContainer(document.querySelector(container), options);
 
-                jef_ajax.injectNewContent.injectHTML(data);
+                jef_ajax.injectNewContent.injectHTML(data, options);
             },
-            sideBySide: function sideBySide(container, data) {
+            sidebyside: function sidebyside(container, data, options) {
 
                 // the new content is displayed side by side relative to old content
                 // get the attributes of the current container and paste it on the new container
                 // --> clone element function
                 var currentContainer = document.querySelector(container),
                     newContainerElement = document.createElement(currentContainer.nodeName),
-                    insertElement,
-                    i;
-
-                for (i in currentContainer.attributes) {
-                    if (typeof currentContainer.attributes[i].nodeName !== 'undefined') {
-                        newContainerElement.setAttribute(currentContainer.attributes[i].nodeName, currentContainer.attributes[i].nodeValue);
-                    }
-                }
+                    insertElement = undefined,
+                    i = undefined;
 
                 // insert the new element before the current container
                 insertElement = currentContainer.parentNode.insertBefore(newContainerElement, currentContainer);
 
-                // defined the insert element like as the new container
-                jef_ajax.injectNewContent.newContainer = insertElement;
-
                 // add/remove classes on container for the CSS animations
-                jef_ajax.loader.classToggleContainer.twoContainers(jef_ajax.injectNewContent.newContainer, currentContainer);
+                jef_ajax.loader.classToggleContainer.twoContainers(insertElement, currentContainer, options);
 
                 // inject HTML into the DOM
-                jef_ajax.injectNewContent.injectHTML(data, currentContainer);
+                jef_ajax.injectNewContent.injectHTML(data, options, insertElement);
             }
         },
 
-        injectHTML: function injectHTML(data, currentContainer) {
+        injectHTML: function injectHTML(data, options, otherContainer) {
 
             // inject content in HTML format
             var newContent = document.createElement('div'),
                 container = document.querySelector(__JEF__.view),
-                oldAttrs = undefined,
-                newAttrs = undefined,
                 e = undefined,
                 y = undefined,
                 a = undefined,
@@ -169,28 +155,48 @@ var jef_ajax = {
             // load new content in HTMLElement object
             newContent.innerHTML = data;
 
-            // remove old content
-            while (container.firstChild) {
-                container.removeChild(container.firstChild);
-            }
+            var oldAttrs = container.attributes,
+                newAttrs = newContent.querySelector(__JEF__.view).attributes;
 
-            // get attributes
-            oldAttrs = container.attributes;
-            newAttrs = newContent.querySelector(__JEF__.view).attributes;
+            // if the content is loaded on other container
+            if (otherContainer) {
 
-            // insert new content in container
-            container.innerHTML = newContent.querySelector(__JEF__.view).innerHTML;
+                // get attributes
+                newAttrs = newContent.querySelector(__JEF__.view).attributes;
 
-            // replace attributes
-            // remove old
-            for (e = 0, k = oldAttrs.length; e < k - 1; e++) {
-                container.removeAttribute(oldAttrs[e].name);
-            }
+                // insert new content in container
+                otherContainer.innerHTML = newContent.querySelector(__JEF__.view).innerHTML;
 
-            // add news
-            for (y = 0, a = newAttrs.length; y < a; y++) {
-                container.setAttribute(newAttrs[y].name, newAttrs[y].value);
-            }
+                for (y = 0, a = newAttrs.length; y < a; y++) {
+                    otherContainer.setAttribute(newAttrs[y].name, newAttrs[y].value);
+                }
+
+                // remove old container
+                setTimeout(function () {
+                    container.parentNode.removeChild(container);
+                }, options.time + options.time / 2);
+
+                // else if content is loaded on the same container
+            } else {
+                    // remove old content
+                    while (container.firstChild) {
+                        container.removeChild(container.firstChild);
+                    }
+
+                    // insert new content in container
+                    container.innerHTML = newContent.querySelector(__JEF__.view).innerHTML;
+
+                    // replace attributes
+                    // remove old
+                    for (e = 0, k = oldAttrs.length; e < k - 1; e++) {
+                        container.removeAttribute(oldAttrs[e].name);
+                    }
+
+                    // add news
+                    for (y = 0, a = newAttrs.length; y < a; y++) {
+                        container.setAttribute(newAttrs[y].name, newAttrs[y].value);
+                    }
+                }
         }
     },
 
@@ -229,7 +235,9 @@ var jef_ajax = {
             myXHR = undefined;
 
         // set default options if there is no
-        typeof options === 'undefined' ? options = {} : '';
+        if (typeof options === 'undefined') {
+            options = {};
+        }
 
         // if time is not specified, we assign a minimum value
         options.time = options.hasOwnProperty('time') ? options.time : 1000;
@@ -248,55 +256,52 @@ var jef_ajax = {
         options.history = options.hasOwnProperty('history') ? options.history : true;
         options.historyCall = options.hasOwnProperty('historyCall') ? options.historyCall : false; // for history events
 
-        // if it specifies the container and not the target,
-        // then the target element is the same as the container
-        // example : if the container is #page then the targeted element will #page
-        //if (options.container && !options.target) {
-        //    options.target = options.container;
-        //
-        //    // if only specifies the container then the target
-        //    // will be added to the page (useful for popups, for example ...)
-        //} else if (!options.container && options.target) {
-        //    options.container = 'isAjaxContainer';
-        //
-        //    // if it does not specify container or target so the whole page is reloaded
-        //} else if (!options.container && !options.target) {
-        //    options.target = 'body';
-        //    options.container = 'body';
-        //}
-
         // legacy : defined target & container for the next …
         options.container = __JEF__.view;
 
         //
         // AJAX request
         //***************************************************/
+
         // managed history event if it is set
-        if (options.history) jef_ajax.history.event(options);
+        if (options.history) {
+            jef_ajax.history.event(options);
+        }
 
         // show loading
-        options.loader ? jef_ajax.loader.show() : '';
+        if (options.loader) {
+            jef_ajax.loader.show();
+        }
 
         // send ajax request with our super object ajax homemade
         myXHR = this.ajax({
             url: __JEF__.url,
             success: function success() {
+                var _this2 = this;
 
                 // inject new content
-                jef_ajax.injectNewContent.display[options.display](options.container, this.response);
+                setTimeout(function () {
+                    jef_ajax.injectNewContent.display[options.display](options.container, _this2.response, options);
+                }, 200);
 
                 // push state in history
                 // if history options is active
                 // and if isn't a call with the back/prev browser btn (history call)
-                if (options.history && !options.historyCall) jef_ajax.history.pushState(options);
+                if (options.history && !options.historyCall) {
+                    jef_ajax.history.pushState(options);
+                }
 
                 // the loader is hidden in the specified time
-                options.loader ? jef_ajax.loader.hide(options.time) : '';
+                if (options.loader) {
+                    jef_ajax.loader.hide(options.time);
+                }
 
                 // launch success function if it is set
-                options.hasOwnProperty('success') ? setTimeout(function () {
-                    options.success();
-                }, options.time) : '';
+                if (options.hasOwnProperty('success')) {
+                    setTimeout(function () {
+                        options.success();
+                    }, options.time);
+                }
 
                 // reload Jef models and modules
                 __JEF__.instance.init();
@@ -314,7 +319,9 @@ var jef_ajax = {
      ****************************************************/
 
     HTMLinXHR: function HTMLinXHR() {
-        if (!window.XMLHttpRequest) return false;
+        if (!window.XMLHttpRequest) {
+            return false;
+        }
         var req = new window.XMLHttpRequest();
         req.open('GET', window.location.href, false);
         try {
