@@ -6,6 +6,23 @@
 
 var jef_ajax = {
 
+    settings: {
+        jquery: true,
+        expose: function expose() {
+            console.log('oui');
+            var extension = undefined;
+            if (window.jQuery) {
+                $.fn.pageLoader = function (params) {
+                    return this.each(function () {
+                        jef_ajax.pageLoader(params);
+                    });
+                };
+            } else {
+                console.log('[Jef] jQuery does not seem to be loaded');
+            }
+        }
+    },
+
     ajax: function ajax(options) {
 
         var req = new XMLHttpRequest();
